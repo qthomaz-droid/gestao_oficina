@@ -38,10 +38,11 @@ def render_movimentacao():
                     if user:
                         os_id = opcoes_os[os_selecionada]
                         c = conn.cursor()
+                        # CORREÇÃO: Utilizando %s
                         c.execute('''INSERT INTO movimentacao (item_id, usuario, qtd, os_id, data_saida, status) 
-                                     VALUES (?,?,?,?,?,?)''', 
+                                     VALUES (%s,%s,%s,%s,%s,%s)''', 
                                   (item_id, user, qtd_retirar, os_id, datetime.now().strftime("%d/%m/%Y %H:%M"), "Em Uso"))
-                        c.execute('UPDATE inventario SET qtd = qtd - ? WHERE id = ?', (qtd_retirar, item_id))
+                        c.execute('UPDATE inventario SET qtd = qtd - %s WHERE id = %s', (qtd_retirar, item_id))
                         conn.commit()
                         st.session_state['msg_sucesso'] = f"Retirada de {qtd_retirar} un. registrada para {user}!"
                         st.rerun()
@@ -66,9 +67,10 @@ def render_movimentacao():
                 c3.write(f"Data: {row['data_saida']}")
                 if c4.button("🔙 Devolver Total", key=f"dev_{row['id']}"):
                     c = conn.cursor()
-                    c.execute('UPDATE movimentacao SET status = ?, data_retorno = ? WHERE id = ?', 
+                    # CORREÇÃO: Utilizando %s
+                    c.execute('UPDATE movimentacao SET status = %s, data_retorno = %s WHERE id = %s', 
                               ("Devolvido", datetime.now().strftime("%d/%m/%Y %H:%M"), row['id']))
-                    c.execute('UPDATE inventario SET qtd = qtd + ? WHERE id = ?', (row['qtd'], row['item_id']))
+                    c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (row['qtd'], row['item_id']))
                     conn.commit()
                     st.session_state['msg_sucesso'] = f"Ferramenta devolvida ao estoque!"
                     st.rerun()

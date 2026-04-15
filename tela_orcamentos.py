@@ -12,7 +12,8 @@ def render_orcamentos():
         if st.form_submit_button("Gerar Orçamento"):
             conn = get_connection()
             c = conn.cursor()
-            c.execute('INSERT INTO orçamentos (servico, materiais, valor) VALUES (?,?,?)', (serv, mat, val))
+            # CORREÇÃO: Utilizando %s
+            c.execute('INSERT INTO orçamentos (servico, materiais, valor) VALUES (%s,%s,%s)', (serv, mat, val))
             conn.commit()
             conn.close()
             

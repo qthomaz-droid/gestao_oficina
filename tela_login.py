@@ -21,7 +21,8 @@ def render_login():
                     if username and senha:
                         conn = get_connection()
                         c = conn.cursor()
-                        c.execute("SELECT senha_hash, nome_completo FROM usuarios WHERE username = ?", (username,))
+                        # CORREÇÃO: Utilizando %s
+                        c.execute("SELECT senha_hash, nome_completo FROM usuarios WHERE username = %s", (username,))
                         resultado = c.fetchone()
                         conn.close()
                         

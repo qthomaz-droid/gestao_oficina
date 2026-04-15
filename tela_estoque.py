@@ -44,7 +44,8 @@ def render_estoque():
                     id_item = opcoes_itens[item_selecionado]
                     
                     c = conn.cursor()
-                    c.execute('UPDATE inventario SET qtd = qtd + ? WHERE id = ?', (qtd_adicionar, id_item))
+                    # CORREÇÃO: Utilizando %s
+                    c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (qtd_adicionar, id_item))
                     conn.commit()
                     
                     st.session_state['msg_sucesso'] = f"Entrada de {qtd_adicionar} un. registrada com sucesso!"
@@ -64,7 +65,8 @@ def render_estoque():
                     st.error("O nome do item é obrigatório.")
                 else:
                     c = conn.cursor()
-                    c.execute('INSERT INTO inventario (item, qtd, tipo) VALUES (?,?,?)', (item, qtd, tipo))
+                    # CORREÇÃO: Utilizando %s
+                    c.execute('INSERT INTO inventario (item, qtd, tipo) VALUES (%s,%s,%s)', (item, qtd, tipo))
                     conn.commit()
                     
                     for chave in ["inv_nome", "inv_tipo", "inv_qtd"]:

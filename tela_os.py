@@ -9,7 +9,6 @@ def render_os():
     try:
         st.header("Central de Ordens de Serviço (O.S.)")
         
-        # --- NOVO: Terceira aba para Relatórios ---
         tab1, tab2, tab3 = st.tabs(["Abrir Nova O.S. / Pedido", "Painel de Gerenciamento", "Relatório Geral"])
 
         with tab1:
@@ -70,9 +69,10 @@ def render_os():
                     
                     conn = get_connection()
                     c = conn.cursor()
+                    # CORREÇÃO: Utilizando %s
                     c.execute('''INSERT INTO os_detalhada 
                                  (tipo, data, nome, endereco, fone, celular, cnpj, modelo, itens_json, mao_obra, pecas, total_geral, status) 
-                                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''', 
+                                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', 
                               (tipo, data_doc.strftime("%d/%m/%Y"), nome, setor, fone, celular, cnpj, modelo, itens_json, 0.0, 0.0, 0.0, "Aberta"))
                     conn.commit()
                     conn.close()
@@ -98,7 +98,8 @@ def render_os():
             try:
                 if mostrar_apenas_meus:
                     nome_logado = st.session_state.get('nome_usuario', '')
-                    df_historico = pd.read_sql_query("SELECT * FROM os_detalhada WHERE nome = ? ORDER BY id DESC", conn, params=(nome_logado,))
+                    # CORREÇÃO: Utilizando %s
+                    df_historico = pd.read_sql_query("SELECT * FROM os_detalhada WHERE nome = %s ORDER BY id DESC", conn, params=(nome_logado,))
                 else:
                     df_historico = pd.read_sql_query("SELECT * FROM os_detalhada ORDER BY id DESC", conn)
             except:
@@ -155,17 +156,19 @@ def render_os():
                                                 for mov_id, qtd_usada in usados_dict.items():
                                                     mat_info = mat_vinculados[mat_vinculados['mov_id'] == mov_id].iloc[0]
                                                     sobra = int(mat_info['retirado']) - int(qtd_usada)
-                                                    c.execute('UPDATE movimentacao SET status = ?, data_retorno = ? WHERE id = ?', (f"Usado {qtd_usada} (Sobra {sobra} devolvida)", datetime.now().strftime("%d/%m/%Y %H:%M"), int(mov_id)))
+                                                    # CORREÇÃO: Utilizando %s
+                                                    c.execute('UPDATE movimentacao SET status = %s, data_retorno = %s WHERE id = %s', (f"Usado {qtd_usada} (Sobra {sobra} devolvida)", datetime.now().strftime("%d/%m/%Y %H:%M"), int(mov_id)))
                                                     if sobra > 0:
-                                                        c.execute('UPDATE inventario SET qtd = qtd + ? WHERE id = ?', (sobra, int(mat_info['item_id'])))
-                                                c.execute("UPDATE os_detalhada SET status = 'Finalizada' WHERE id = ?", (int(row['id']),))
+                                                        c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (sobra, int(mat_info['item_id'])))
+                                                c.execute("UPDATE os_detalhada SET status = 'Finalizada' WHERE id = %s", (int(row['id']),))
                                                 conn.commit()
                                                 st.session_state['msg_sucesso'] = f"OS {row['id']} encerrada e estoque atualizado!"
                                                 st.rerun()
                                     else:
                                         if st.button("Finalizar OS (Sem materiais vinculados)", key=f"fin_simples_{row['id']}"):
                                             c = conn.cursor()
-                                            c.execute("UPDATE os_detalhada SET status = 'Finalizada' WHERE id = ?", (int(row['id']),))
+                                            # CORREÇÃO: Utilizando %s
+                                            c.execute("UPDATE os_detalhada SET status = 'Finalizada' WHERE id = %s", (int(row['id']),))
                                             conn.commit()
                                             st.session_state['msg_sucesso'] = f"OS {row['id']} finalizada!"
                                             st.rerun()
@@ -185,13 +188,14 @@ def render_os():
                                             c = conn.cursor()
                                             for idx, dados in recebidos_dict.items():
                                                 if dados['qtd'] > 0:
-                                                    c.execute("SELECT id FROM inventario WHERE LOWER(item) = LOWER(?)", (dados['nome'].strip(),))
+                                                    # CORREÇÃO: Utilizando %s
+                                                    c.execute("SELECT id FROM inventario WHERE LOWER(item) = LOWER(%s)", (dados['nome'].strip(),))
                                                     resultado = c.fetchone()
                                                     if resultado:
-                                                        c.execute('UPDATE inventario SET qtd = qtd + ? WHERE id = ?', (dados['qtd'], resultado[0]))
+                                                        c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (dados['qtd'], resultado[0]))
                                                     else:
-                                                        c.execute('INSERT INTO inventario (item, qtd, tipo) VALUES (?,?,?)', (dados['nome'].strip(), dados['qtd'], "Material/Consumível"))
-                                            c.execute("UPDATE os_detalhada SET status = 'Recebido (Estoque Atualizado)' WHERE id = ?", (int(row['id']),))
+                                                        c.execute('INSERT INTO inventario (item, qtd, tipo) VALUES (%s,%s,%s)', (dados['nome'].strip(), dados['qtd'], "Material/Consumível"))
+                                            c.execute("UPDATE os_detalhada SET status = 'Recebido (Estoque Atualizado)' WHERE id = %s", (int(row['id']),))
                                             conn.commit()
                                             st.session_state['msg_sucesso'] = f"Entrada do pedido {row['id']} concluída!"
                                             st.rerun()
@@ -221,7 +225,6 @@ def render_os():
                 st.info("Nenhum documento encontrado.")
             conn.close()
 
-        # --- NOVA ABA: RELATÓRIO GERAL ---
         with tab3:
             st.write("### Relatório Resumo de Documentos")
             
@@ -232,11 +235,12 @@ def render_os():
             try:
                 if mostrar_meus_rel:
                     nome_logado = st.session_state.get('nome_usuario', '')
+                    # CORREÇÃO: Utilizando %s
                     df_relatorio = pd.read_sql_query('''
                         SELECT id as "Nº", tipo as "Tipo", data as "Data", 
                                nome as "Solicitante", endereco as "Setor", 
                                modelo as "Equipamento", status as "Status"
-                        FROM os_detalhada WHERE nome = ? ORDER BY id DESC''', conn, params=(nome_logado,))
+                        FROM os_detalhada WHERE nome = %s ORDER BY id DESC''', conn, params=(nome_logado,))
                 else:
                     df_relatorio = pd.read_sql_query('''
                         SELECT id as "Nº", tipo as "Tipo", data as "Data", 
