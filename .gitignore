@@ -1,0 +1,22 @@
+# Bancos de dados locais (MUITO IMPORTANTE)
+oficina.db
+*.sqlite3
+
+# Segredos e Credenciais do Streamlit (MUITO IMPORTANTE)
+.streamlit/secrets.toml
+secrets.toml
+.env
+
+# Ambientes Virtuais do Python
+venv/
+env/
+.venv/
+
+# Ficheiros temporários e de cache do Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Ficheiros do sistema operacional (Opcional, mas recomendado)
+.DS_Store
+Thumbs.db
