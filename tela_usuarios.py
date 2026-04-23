@@ -26,7 +26,6 @@ def render_usuarios():
                     conn = get_connection()
                     c = conn.cursor()
                     
-                    # CORREÇÃO: Utilizando %s
                     c.execute("SELECT id FROM usuarios WHERE username = %s", (user.lower(),))
                     if c.fetchone():
                         st.error("Este Nome de Usuário já está em uso! Escolha outro.")
@@ -34,7 +33,6 @@ def render_usuarios():
                         salt = bcrypt.gensalt()
                         hash_senha = bcrypt.hashpw(senha.encode('utf-8'), salt).decode('utf-8')
 
-                        # CORREÇÃO: Utilizando %s
                         c.execute("INSERT INTO usuarios (username, senha_hash, nome_completo) VALUES (%s,%s,%s)",
                                   (user.lower(), hash_senha, nome))
                         conn.commit()

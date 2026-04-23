@@ -34,11 +34,10 @@ def render_movimentacao():
                 
                 os_selecionada = st.selectbox("Vincular à Ordem de Serviço (Opcional)", options=list(opcoes_os.keys()))
                 
-                if st.form_submit_button("Confirmar Saída"):
+                if st.form_submit_button("Confirmar Saída", type="primary", width="stretch"):
                     if user:
                         os_id = opcoes_os[os_selecionada]
                         c = conn.cursor()
-                        # CORREÇÃO: Utilizando %s
                         c.execute('''INSERT INTO movimentacao (item_id, usuario, qtd, os_id, data_saida, status) 
                                      VALUES (%s,%s,%s,%s,%s,%s)''', 
                                   (item_id, user, qtd_retirar, os_id, datetime.now().strftime("%d/%m/%Y %H:%M"), "Em Uso"))
@@ -48,6 +47,8 @@ def render_movimentacao():
                         st.rerun()
                     else:
                         st.error("Informe o responsável.")
+        else:
+            st.info("📦 **Não há ferramentas ou materiais disponíveis no momento.**\n\nTodos os itens estão com saldo zerado. Para realizar uma retirada, primeiro registre a entrada de produtos na tela de Gestão de Estoque.")
 
     with tab2:
         st.subheader("Ferramentas em Uso (Pendentes de Devolução)")
@@ -60,22 +61,23 @@ def render_movimentacao():
         
         if not pendentes.empty:
             for _, row in pendentes.iterrows():
-                c1, c2, c3, c4 = st.columns([3, 2, 2, 2])
-                info_os = f" (OS {row['os_id']})" if pd.notna(row['os_id']) else ""
-                c1.write(f"**{row['item']}** x{row['qtd']}{info_os}")
-                c2.write(f"Responsável: {row['usuario']}")
-                c3.write(f"Data: {row['data_saida']}")
-                if c4.button("🔙 Devolver Total", key=f"dev_{row['id']}"):
-                    c = conn.cursor()
-                    # CORREÇÃO: Utilizando %s
-                    c.execute('UPDATE movimentacao SET status = %s, data_retorno = %s WHERE id = %s', 
-                              ("Devolvido", datetime.now().strftime("%d/%m/%Y %H:%M"), row['id']))
-                    c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (row['qtd'], row['item_id']))
-                    conn.commit()
-                    st.session_state['msg_sucesso'] = f"Ferramenta devolvida ao estoque!"
-                    st.rerun()
+                with st.container(border=True):
+                    c1, c2 = st.columns([3, 1])
+                    with c1:
+                        info_os = f" (OS {row['os_id']})" if pd.notna(row['os_id']) else ""
+                        st.markdown(f"**{row['item']}** (x{row['qtd']}) {info_os}")
+                        st.caption(f"👤 Resp: {row['usuario']} | 📅 Saída: {row['data_saida']}")
+                    with c2:
+                        if st.button("🔙 Devolver", key=f"dev_{row['id']}", width="stretch"):
+                            c = conn.cursor()
+                            c.execute('UPDATE movimentacao SET status = %s, data_retorno = %s WHERE id = %s', 
+                                      ("Devolvido", datetime.now().strftime("%d/%m/%Y %H:%M"), row['id']))
+                            c.execute('UPDATE inventario SET qtd = qtd + %s WHERE id = %s', (row['qtd'], row['item_id']))
+                            conn.commit()
+                            st.session_state['msg_sucesso'] = f"Ferramenta devolvida ao estoque!"
+                            st.rerun()
         else:
-            st.info("Não existem ferramentas pendentes de devolução.")
+            st.success("Tudo em ordem! Nenhuma ferramenta pendente de devolução no momento.")
 
     with tab3:
         st.subheader("Relatório de Movimentações")
@@ -90,13 +92,12 @@ def render_movimentacao():
             JOIN inventario i ON m.item_id = i.id 
             ORDER BY m.id DESC''', conn)
         
-        st.dataframe(historico, use_container_width=True)
-        
         if not historico.empty:
+            st.dataframe(historico, use_container_width=True, hide_index=True)
             colunas = list(historico.columns)
             dados_pdf = [colunas] + historico.astype(str).values.tolist()
             
-            if st.button("📄 Gerar PDF de Retiradas"):
+            if st.button("📄 Gerar PDF de Retiradas", width="stretch"):
                 pdf = gerar_pdf_tabela(dados_pdf, "Relatório Geral de Retiradas", modo_paisagem=True)
                 st.download_button(
                     label="Baixar Relatório PDF",
@@ -104,5 +105,7 @@ def render_movimentacao():
                     file_name=f"relatorio_movimentacao_{datetime.now().strftime('%d_%m_%Y')}.pdf",
                     mime="application/pdf"
                 )
-    
+        else:
+            st.info("Nenhuma movimentação registrada no sistema ainda.")
+            
     conn.close()

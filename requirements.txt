@@ -3,3 +3,4 @@ pandas
 reportlab
 bcrypt
 psycopg2-binary
+streamlit-cookies-controller
